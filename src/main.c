@@ -11,6 +11,8 @@
 #error F_CPU unknown
 #endif
 
+// PA.4 used for IR receive, F_INTERRUPTS is 15000
+
 void timer16_init (void)
 {
     TIM_TimeBaseInitTypeDef TIM_TimeBaseStructure;
@@ -23,8 +25,8 @@ void timer16_init (void)
 
     TIM_TimeBaseStructure.TIM_ClockDivision                 = TIM_CKD_DIV1;
     TIM_TimeBaseStructure.TIM_CounterMode                   = TIM_CounterMode_Up;
-    TIM_TimeBaseStructure.TIM_Prescaler                        = 7;
-    TIM_TimeBaseStructure.TIM_Period                     = (uint32_t)(((F_CPU / F_INTERRUPTS) / 8) * 1.12f ) - 1;
+    TIM_TimeBaseStructure.TIM_Prescaler                     = 7;
+    TIM_TimeBaseStructure.TIM_Period                        = (uint32_t)(((F_CPU / F_INTERRUPTS) / 80) * 1.12f ) - 1;
     TIM_TimeBaseStructure.TIM_RepetitionCounter             = 0;
     TIM_TimeBaseInit(TIM16, &TIM_TimeBaseStructure);
 
@@ -38,12 +40,10 @@ void timer16_init (void)
     TIM_Cmd(TIM16, ENABLE);
 }
 
-volatile uint32_t long_count = 0;
 void TIM16_IRQHandler(void)                                                       // Timer16 Interrupt Handler
 {
   TIM_ClearITPendingBit(TIM16, TIM_IT_Update);
   (void) irmp_ISR();                                                              // call irmp ISR
-  long_count++;
   // drv_uart_printf(UART1, "test time14\r\n");
   // call other timer interrupt routines...
 }
@@ -76,7 +76,6 @@ void TIM2_IRQHandler(void)                                                      
 {
   TIM_ClearITPendingBit(TIM2, TIM_IT_Update);
   (void) irmp_ISR();                                                             // call irmp ISR
-  long_count++;
   // call other timer interrupt routines...
 }
 
@@ -88,17 +87,11 @@ int main(void)
     uart_ringbuf_init();
     drv_uart1_init(115200);
     irmp_init();
-    // timer16_init();
-    timer2_init();
-
-    // drv_gpio_pin_mode(PB_5, GPIO_MODE_OUTPUT);
-    // drv_gpio_pin_mode(PA_4, GPIO_MODE_INPUT_NONE);
-    // drv_gpio_pin_mode(PA_5, GPIO_MODE_INPUT_NONE);
-    // drv_gpio_pin_mode(PA_6, GPIO_MODE_INPUT_NONE);
-    // drv_gpio_pin_mode(PA_7, GPIO_MODE_INPUT_NONE);
+    timer16_init();
+    // timer2_init();
 
     log_uart_printf(UART1, "hello yanminge\r\n");
-    unsigned long current_time = millis();
+    // unsigned long current_time = millis();
     while(1)
     {
         if (irmp_get_data (&irmp_data))
@@ -111,18 +104,6 @@ int main(void)
                 log_uart_printf(UART1, "IRMP_DATA>>  protocol:0x%x, address:0x%x, command:0x%x, flags:0x%x\r\n", irmp_data.protocol, irmp_data.address, irmp_data.command, irmp_data.flags);
                 memcpy(&irmp_data_old, &irmp_data, sizeof(irmp_data));
             }
-            // ir signal decoded, do something here...
-            // irmp_data.protocol is the protocol, see irmp.h
-            // irmp_data.address is the address/manufacturer code of ir sender
-            // irmp_data.command is the command code
-            // irmp_protocol_names[irmp_data.protocol] is the protocol name (if enabled, see irmpconfig.h)
-
-        }
-        // log_uart_printf(UART1, "gpio:(%d)\r\n", drv_gpio_digital_read(PA_6));
-        if(millis() - current_time >= 1000)
-        {
-            log_uart_printf(UART1, "long_count:%d\r\n", long_count);
-            current_time = millis();
         }
     }
     return 0;
