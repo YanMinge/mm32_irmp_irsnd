@@ -26,7 +26,7 @@ void timer16_init (void)
     TIM_TimeBaseStructure.TIM_ClockDivision                 = TIM_CKD_DIV1;
     TIM_TimeBaseStructure.TIM_CounterMode                   = TIM_CounterMode_Up;
     TIM_TimeBaseStructure.TIM_Prescaler                     = 7;
-    TIM_TimeBaseStructure.TIM_Period                        = (uint32_t)(((F_CPU / F_INTERRUPTS) / 80) * 1.12f ) - 1;
+    TIM_TimeBaseStructure.TIM_Period                        = (uint32_t)(((F_CPU / F_INTERRUPTS) / 8) / 9) - 1;
     TIM_TimeBaseStructure.TIM_RepetitionCounter             = 0;
     TIM_TimeBaseInit(TIM16, &TIM_TimeBaseStructure);
 
@@ -59,7 +59,7 @@ void timer2_init (void)
     TIM_TimeBaseStructure.TIM_ClockDivision                 = TIM_CKD_DIV1;
     TIM_TimeBaseStructure.TIM_CounterMode                   = TIM_CounterMode_Up;
     TIM_TimeBaseStructure.TIM_Prescaler                     = 7;
-    TIM_TimeBaseStructure.TIM_Period                        = (uint32_t)(((F_CPU / F_INTERRUPTS) / 80) * 1.12f ) - 1;
+    TIM_TimeBaseStructure.TIM_Period                        = (uint32_t)(((F_CPU / F_INTERRUPTS) / 8) / 9) - 1;
     TIM_TimeBaseInit(TIM2, &TIM_TimeBaseStructure);
 
     TIM_ITConfig(TIM2, TIM_IT_Update, ENABLE);
