@@ -59,10 +59,7 @@
 #elif defined(__SDCC_stm8)                                                          // STM8
 #  define SDCC_STM8
 #elif defined(MM32F013x)                                                            // ARM MM32F013x
-#  include <stdint.h>
-#  include <stdio.h>
 #  include "drv_gpio.h"
-#  include "drv_uart.h"
 #  define ARM_MM32
 #  define ARM_MM32F013X
    extern u32 SystemCoreClock;
@@ -83,7 +80,6 @@
 #  include <core_pins.h>
 #  define TEENSY_ARM_CORTEX_M4
 #elif defined(unix) || defined(WIN32) || defined(__APPLE__)                         // Unix/Linux or Windows or Apple
-   kjjkjkkj
 #  define UNIX_OR_WINDOWS
 #elif defined(__MBED__)                                                             // mbed platform
 // #include "mbed.h"                                                                // if mbed.h is used, source must be compiled as cpp
@@ -100,7 +96,6 @@
 #  include <stdio.h>
 #  include <stdlib.h>
 #  define F_CPU 8000000L
-   fff
 #  define ANALYZE
 #  include <stdint.h>
 #  ifdef _MSC_VER
@@ -159,6 +154,16 @@
 #elif defined(SDCC_STM8)
 
 #  include "stm8s.h"
+#  define PROGMEM
+#  define memcpy_P                      memcpy
+#  define __attribute__(x)
+#  define uint_fast8_t                  uint8_t
+#  define uint_fast16_t                 uint16_t
+
+#elif defined(ARM_MM32F013X)
+#  include <stdint.h>
+#  include <stdio.h>
+#  include "drv_uart.h"
 #  define PROGMEM
 #  define memcpy_P                      memcpy
 #  define __attribute__(x)

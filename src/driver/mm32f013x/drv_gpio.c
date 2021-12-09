@@ -251,7 +251,41 @@ int drv_gpio_pwm_mode(gpio_pin_type pin, uint16_t frequency)
 
     switch(pin)
     {
-        case PA_0:
+        case PA_0:       //TIM2_CH1
+             /* GPIO configure */
+             GPIO_PinAFConfig(GPIOA, GPIO_PinSource0, GPIO_AF_2);
+             GPIO_InitStructure.GPIO_Pin  =  pin_num;
+             GPIO_Init(GPIOA, &GPIO_InitStructure);
+             
+             /* Timer configure */
+             RCC_APB1PeriphClockCmd(RCC_APB1Periph_TIM2, ENABLE);
+
+             TIM_TimeBaseStructInit(&TIM_TimeBaseStructure);
+             TIM_TimeBaseStructure.TIM_Period = (9000000 / frequency) - 1;
+             pwm_divination = TIM_TimeBaseStructure.TIM_Period;
+             TIM_TimeBaseStructure.TIM_Prescaler = 7;
+             //Setting Clock Segmentation
+             TIM_TimeBaseStructure.TIM_ClockDivision = TIM_CKD_DIV1;
+             TIM_TimeBaseStructure.TIM_RepetitionCounter = 0;
+             ///TIM Upward Counting Mode
+             TIM_TimeBaseStructure.TIM_CounterMode = TIM_CounterMode_Up;
+             TIM_TimeBaseInit(TIM2, &TIM_TimeBaseStructure);
+
+             TIM_OCStructInit(&TIM_OCInitStructure);
+             //Select Timer Mode: TIM Pulse Width Modulation Mode 2
+             TIM_OCInitStructure.TIM_OCMode = TIM_OCMode_PWM2;
+             TIM_OCInitStructure.TIM_OutputState = TIM_OutputState_Enable;
+             //Setting the Pulse Value of the Capture Comparison Register to be Loaded
+             TIM_OCInitStructure.TIM_Pulse = 0;
+             //Output polarity: TIM output is more polar
+             TIM_OCInitStructure.TIM_OCPolarity = TIM_OCPolarity_High;
+             TIM_OC1Init(TIM2, &TIM_OCInitStructure);
+
+             TIM_OC1PreloadConfig(TIM2, TIM_OCPreload_Enable);
+             TIM_ARRPreloadConfig(TIM2, ENABLE);
+             TIM_CtrlPWMOutputs(TIM2, ENABLE);
+
+             TIM_Cmd(TIM2, ENABLE);
              break;
         case PA_4:
              break;
@@ -293,25 +327,17 @@ int drv_gpio_pwm_mode(gpio_pin_type pin, uint16_t frequency)
 
              TIM_Cmd(TIM3, ENABLE);
              break;
-        case PB_0:
-             break;
-        case PB_1:
-             break;
-        case PB_3:
-             break;
-        case PB_4:
-             break;
-        case PB_6:       //TIM2_CH1
+        case PB_0:       //TIM3_CH3
              /* GPIO configure */
-             GPIO_PinAFConfig(GPIOB, GPIO_PinSource6, GPIO_AF_4);
+             GPIO_PinAFConfig(GPIOB, GPIO_PinSource0, GPIO_AF_1);
              GPIO_InitStructure.GPIO_Pin  =  pin_num;
              GPIO_Init(GPIOB, &GPIO_InitStructure);
              
              /* Timer configure */
-             RCC_APB1PeriphClockCmd(RCC_APB1Periph_TIM2, ENABLE);
+             RCC_APB1PeriphClockCmd(RCC_APB1Periph_TIM3, ENABLE);
 
              TIM_TimeBaseStructInit(&TIM_TimeBaseStructure);
-             TIM_TimeBaseStructure.TIM_Period = (9000000 / frequency) - 1;
+             TIM_TimeBaseStructure.TIM_Period = (9000000 / frequency / 9) - 1;
              pwm_divination = TIM_TimeBaseStructure.TIM_Period;
              TIM_TimeBaseStructure.TIM_Prescaler = 7;
              //Setting Clock Segmentation
@@ -319,7 +345,7 @@ int drv_gpio_pwm_mode(gpio_pin_type pin, uint16_t frequency)
              TIM_TimeBaseStructure.TIM_RepetitionCounter = 0;
              ///TIM Upward Counting Mode
              TIM_TimeBaseStructure.TIM_CounterMode = TIM_CounterMode_Up;
-             TIM_TimeBaseInit(TIM2, &TIM_TimeBaseStructure);
+             TIM_TimeBaseInit(TIM3, &TIM_TimeBaseStructure);
 
              TIM_OCStructInit(&TIM_OCInitStructure);
              //Select Timer Mode: TIM Pulse Width Modulation Mode 2
@@ -329,13 +355,22 @@ int drv_gpio_pwm_mode(gpio_pin_type pin, uint16_t frequency)
              TIM_OCInitStructure.TIM_Pulse = 0;
              //Output polarity: TIM output is more polar
              TIM_OCInitStructure.TIM_OCPolarity = TIM_OCPolarity_High;
-             TIM_OC1Init(TIM2, &TIM_OCInitStructure);
+             TIM_OC3Init(TIM3, &TIM_OCInitStructure);
 
-             TIM_OC1PreloadConfig(TIM2, TIM_OCPreload_Enable);
-             TIM_ARRPreloadConfig(TIM2, ENABLE);
-             TIM_CtrlPWMOutputs(TIM2, ENABLE);
+             TIM_OC3PreloadConfig(TIM3, TIM_OCPreload_Enable);
+             TIM_OC3PolarityConfig(TIM3, TIM_OCPolarity_Low);
+             TIM_ARRPreloadConfig(TIM3, ENABLE);
+             TIM_CtrlPWMOutputs(TIM3, ENABLE);
 
-             TIM_Cmd(TIM2, ENABLE);
+             TIM_Cmd(TIM3, ENABLE);
+             break;
+        case PB_1:
+             break;
+        case PB_3:
+             break;
+        case PB_4:
+             break;
+        case PB_6:
              break;
         case PB_7:
              break;
@@ -350,12 +385,78 @@ int drv_gpio_pwm_mode(gpio_pin_type pin, uint16_t frequency)
     return 0;
 }
 
+int drv_analog_write_freq(gpio_pin_type pin, uint32_t frequency)
+{
+    TIM_TimeBaseInitTypeDef  TIM_TimeBaseStructure;
+    switch(pin)
+    {
+        case PA_0:       //TIM2_CH1         
+              TIM_TimeBaseStructInit(&TIM_TimeBaseStructure);
+             TIM_TimeBaseStructure.TIM_Period = (9000000 / frequency) - 1;
+             pwm_divination = TIM_TimeBaseStructure.TIM_Period;
+             TIM_TimeBaseStructure.TIM_Prescaler = 7;
+             //Setting Clock Segmentation
+             TIM_TimeBaseStructure.TIM_ClockDivision = TIM_CKD_DIV1;
+             TIM_TimeBaseStructure.TIM_RepetitionCounter = 0;
+             ///TIM Upward Counting Mode
+             TIM_TimeBaseStructure.TIM_CounterMode = TIM_CounterMode_Up;
+             TIM_TimeBaseInit(TIM2, &TIM_TimeBaseStructure);
+             break;
+        case PA_4:
+             break;
+        case PA_5:
+             break;
+        case PA_6:       //TIM3_CH1
+             TIM_TimeBaseStructInit(&TIM_TimeBaseStructure);
+             TIM_TimeBaseStructure.TIM_Period = (9000000 / frequency) - 1;
+             pwm_divination = TIM_TimeBaseStructure.TIM_Period;
+             TIM_TimeBaseStructure.TIM_Prescaler = 7;
+             //Setting Clock Segmentation
+             TIM_TimeBaseStructure.TIM_ClockDivision = TIM_CKD_DIV1;
+             TIM_TimeBaseStructure.TIM_RepetitionCounter = 0;
+             ///TIM Upward Counting Mode
+             TIM_TimeBaseStructure.TIM_CounterMode = TIM_CounterMode_Up;
+             TIM_TimeBaseInit(TIM3, &TIM_TimeBaseStructure);
+             break;
+        case PB_0:       //TIM3_CH3
+             TIM_TimeBaseStructInit(&TIM_TimeBaseStructure);
+             TIM_TimeBaseStructure.TIM_Period = (9000000 / frequency / 9) - 1;
+             pwm_divination = TIM_TimeBaseStructure.TIM_Period;
+             TIM_TimeBaseStructure.TIM_Prescaler = 7;
+             //Setting Clock Segmentation
+             TIM_TimeBaseStructure.TIM_ClockDivision = TIM_CKD_DIV1;
+             TIM_TimeBaseStructure.TIM_RepetitionCounter = 0;
+             ///TIM Upward Counting Mode
+             TIM_TimeBaseStructure.TIM_CounterMode = TIM_CounterMode_Up;
+             TIM_TimeBaseInit(TIM3, &TIM_TimeBaseStructure);
+             break;
+        case PB_1:
+             break;
+        case PB_3:
+             break;
+        case PB_4:
+             break;
+        case PB_6:
+        case PB_7:
+             break;
+        case PB_13:
+             break;
+        case PB_14:
+             break;
+        default:
+             return -1;
+    }
+    return 0;
+}
+
 int drv_gpio_analog_write(gpio_pin_type pin, uint16_t analog_val)
 {
     uint16_t capture_compare_val = 0;
     switch(pin)
     {
-        case PA_0:
+        case PA_0:       //TIM2_CH1
+             capture_compare_val = line_map(analog_val, 0, pwm_divination, 0, 1000);
+             TIM_SetCompare1(TIM2, capture_compare_val);
              break;
         case PA_4:
              break;
@@ -365,7 +466,9 @@ int drv_gpio_analog_write(gpio_pin_type pin, uint16_t analog_val)
              capture_compare_val = line_map(analog_val, 0, pwm_divination, 0, 1000);
              TIM_SetCompare1(TIM3, capture_compare_val);
              break;
-        case PB_0:
+        case PB_0:       //TIM3_CH3
+             capture_compare_val = line_map(analog_val, 0, pwm_divination, 0, 1000);
+             TIM_SetCompare3(TIM3, capture_compare_val);
              break;
         case PB_1:
              break;
@@ -373,9 +476,7 @@ int drv_gpio_analog_write(gpio_pin_type pin, uint16_t analog_val)
              break;
         case PB_4:
              break;
-        case PB_6:       //TIM2_CH1
-             capture_compare_val = line_map(analog_val, 0, pwm_divination, 0, 1000);
-             TIM_SetCompare1(TIM2, capture_compare_val);
+        case PB_6:
         case PB_7:
              break;
         case PB_13:

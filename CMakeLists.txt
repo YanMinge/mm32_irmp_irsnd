@@ -76,11 +76,12 @@ aux_source_directory(${PROJECT_SOURCE_DIR}/hal_device/${mcu_path_dir}/Source HAL
 # IRMP and IRSND source
 set(IRMP_SRCS
     ${PROJECT_SOURCE_DIR}/src/components/Irmp/irmp.c
+    ${PROJECT_SOURCE_DIR}/src/components/Irmp/irmp.c
 )
 
-#set(IRSND_SRCS
-#    ${PROJECT_SOURCE_DIR}/src/components/Irsnd/irsnd.c
-#)
+set(IRSND_SRCS
+    ${PROJECT_SOURCE_DIR}/src/components/Irsnd/irsnd.c
+)
 
 # the hal source is same for kinds of m32f00 for cortex-m0 machine
 
@@ -122,7 +123,7 @@ set(CMAKE_EXE_LINKER_FLAGS "${MCU} -specs=nano.specs -specs=nosys.specs -T${LDSC
 
 
 if(MCU_TYPE)
-     add_executable(${MY_TARGET}.elf ${USRMAIN} ${USRDRIVER} ${LIBSRC} ${HALSRC} ${IRMP_SRCS}
+     add_executable(${MY_TARGET}.elf ${USRMAIN} ${USRDRIVER} ${LIBSRC} ${HALSRC} ${IRMP_SRCS} ${IRSND_SRCS}
         ${PROJECT_SOURCE_DIR}/hal_device/${mcu_path_dir}/Source/GCC_StartAsm/startup_${mcu_path_dir}.s)
 else()
       message(FATAL_ERROR,"please select mcu type")

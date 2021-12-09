@@ -74,6 +74,7 @@ void drv_gpio_pin_mode(gpio_pin_type pin,gpio_mode_type mode);
 void drv_gpio_digital_write(gpio_pin_type  pin, uint8_t val);
 int drv_gpio_digital_read(gpio_pin_type pin);
 int drv_gpio_pwm_mode(gpio_pin_type pin, uint16_t frequency);
+int drv_analog_write_freq(gpio_pin_type pin, uint32_t frequency);
 int drv_gpio_analog_write(gpio_pin_type pin, uint16_t analog_val);
 void adc_update(void);
 int drv_gpio_analog_read(gpio_pin_type pin);

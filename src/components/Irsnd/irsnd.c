@@ -185,7 +185,8 @@
     //Nothing here to do here -> See irsndconfig.h
 #elif defined (__xtensa__)                                              // ESP8266
     //Nothing here to do here -> See irsndconfig.h
-
+#elif defined (ARM_MM32F013X)                                           // MM32 with Hal Library
+    //Nothing here to do here -> See irsndconfig.h
 /*---------------------------------------------------------------------------------------------------------------------------------------------------
  * Macro digitalPinHasPWM bothers PIC_C18 compiler, but why?
  *
@@ -531,6 +532,15 @@
 #  define IRSND_FREQ_40_KHZ                     (IRSND_FREQ_TYPE) (40000)
 #  define IRSND_FREQ_56_KHZ                     (IRSND_FREQ_TYPE) (56000)
 #  define IRSND_FREQ_455_KHZ                    (IRSND_FREQ_TYPE) (455000)
+#elif defined (ARM_MM32F013X)                   // MM32
+#  define IRSND_FREQ_TYPE                       uint32_t
+#  define IRSND_FREQ_30_KHZ                     (IRSND_FREQ_TYPE) (30000)
+#  define IRSND_FREQ_32_KHZ                     (IRSND_FREQ_TYPE) (32000)
+#  define IRSND_FREQ_36_KHZ                     (IRSND_FREQ_TYPE) (36000)
+#  define IRSND_FREQ_38_KHZ                     (IRSND_FREQ_TYPE) (38000)
+#  define IRSND_FREQ_40_KHZ                     (IRSND_FREQ_TYPE) (40000)
+#  define IRSND_FREQ_56_KHZ                     (IRSND_FREQ_TYPE) (56000)
+#  define IRSND_FREQ_455_KHZ                    (IRSND_FREQ_TYPE) (455000)
 #else                                           // AVR
 #  if F_CPU >= 16000000L
 #    define AVR_PRESCALER                       8
@@ -590,6 +600,9 @@ irsnd_on (void)
 
 #  elif defined (__xtensa__)                            // ESP8266 (Arduino)
         analogWrite(IRSND_PIN, 33 * 1023 / 100);        // pwm 33%
+
+#  elif defined (ARM_MM32F013X)                                         // MM32
+        drv_gpio_analog_write(IRSND_PIN, 33 * 1023 / 100);              // pwm 33%
 
 #  elif defined (__AVR_XMEGA__)
 #    if (IRSND_OCx == IRSND_XMEGA_OC0A)                                 // use OC0A
@@ -669,6 +682,9 @@ irsnd_off (void)
 
 #  elif defined (__xtensa__)                                                            // ESP8266
         analogWrite(IRSND_PIN, 0);                                                      // pwm off, LOW level
+
+#  elif defined (ARM_MM32F013X)                                                         // MM32
+        drv_gpio_analog_write(IRSND_PIN, 0);                                            // pwm off, LOW level
 
 #  elif defined (__AVR_XMEGA__)
 #    if (IRSND_OCx == IRSND_XMEGA_OC0A)                                                 // use OC0A
@@ -830,10 +846,14 @@ irsnd_set_freq (IRSND_FREQ_TYPE freq)
         analogWriteFrequency(IRSND_PIN, freq);
         analogWrite(IRSND_PIN, 0);                                                          // pwm off, LOW level
 
-#elif defined (__xtensa__)
+#  elif defined (__xtensa__)
         // analogWriteRange(255);
         analogWriteFreq(freq);
         analogWrite(IRSND_PIN, 0);                                                          // pwm off, LOW level
+
+#  elif defined (ARM_MM32F013X)
+        drv_analog_write_freq(IRSND_PIN, freq);
+        drv_gpio_analog_write(IRSND_PIN, 0);                                                // pwm off, LOW level
 
 #  elif defined (__AVR_XMEGA__)
         XMEGA_Timer.CCA = freq;
@@ -955,6 +975,9 @@ irsnd_init (void)
 #  elif defined (__xtensa__)
         pinMode(IRSND_PIN, OUTPUT);
         irsnd_set_freq (IRSND_FREQ_36_KHZ);
+
+#  elif defined (ARM_MM32F013X)
+        drv_gpio_pwm_mode(IRSND_PIN, IRSND_FREQ_38_KHZ);                            // set default frequency
 
 #  elif defined (__AVR_XMEGA__)
         IRSND_PORT &= ~(1<<IRSND_BIT);                                              // set IRSND_BIT to low
