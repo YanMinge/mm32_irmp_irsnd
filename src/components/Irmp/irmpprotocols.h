@@ -86,8 +86,9 @@
 #define RF_MEDION_PROTOCOL                      59              // RF PC Medion Remote Control (Medion)
 
 #define IRMP_MELINERA_PROTOCOL                  60
+#define IRMP_UNIVERSAL_PROTOCOL                 61
 
-#define IRMP_N_PROTOCOLS                        60              // number of supported protocols
+#define IRMP_N_PROTOCOLS                        61              // number of supported protocols
 
 /*---------------------------------------------------------------------------------------------------------------------------------------------------
  * timing constants:

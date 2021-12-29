@@ -882,6 +882,8 @@ irmp_protocol_names[IRMP_N_PROTOCOLS + 1] PROGMEM =
 #  else
 #    error USB_SERIAL not defined in ARDUINO Environment
 #  endif
+#elif defined(ARM_MM32F013X)
+#  include "drv_uart.h"
 #elif defined(_CHIBIOS_HAL_)                                            // ChibiOS HAL
 #  if IRMP_EXT_LOGGING == 1
 #    error IRMP_EXT_LOGGING not implemented for ChibiOS HAL, use regular logging instead
@@ -1038,6 +1040,8 @@ irmp_uart_init (void)
 
 #else
 
+#if defined(ARM_MM32F013X)
+#else 
 #if (IRMP_EXT_LOGGING == 0)                                                                         // use UART
     UART0_UBRRH = UBRRH_VALUE;                                                                      // set baud rate
     UART0_UBRRL = UBRRL_VALUE;
@@ -1052,6 +1056,7 @@ irmp_uart_init (void)
     UART0_UCSRB |= UART0_TXEN_BIT_VALUE;                                                            // enable UART TX
 #else                                                                                               // other log method
     initextlog();
+#endif //ARM_MM32F013X
 #endif //IRMP_EXT_LOGGING
 #endif //ARM_STM32F4XX
 #endif // UNIX_OR_WINDOWS
@@ -1085,6 +1090,9 @@ irmp_uart_putc (unsigned char ch)
 #elif defined(ARDUINO)
     // we use the Arduino Serial Imlementation
     usb_serial_putchar(ch);
+
+#elif defined(ARM_MM32F013X)
+    drv_uart_write_byte(UART1, ch);
 
 #elif defined(_CHIBIOS_HAL_)
     // use the SD interface from HAL, log to IRMP_LOGGING_SD which is defined in irmpconfig.h
@@ -1129,7 +1137,37 @@ irmp_uart_putc (unsigned char ch)
 
 #define STARTCYCLES                       2                                 // min count of zeros before start of logging
 #define ENDBITS                        1000                                 // number of sequenced highbits to detect end
-#define DATALEN                         700                                 // log buffer size
+#define DATALEN                        1000                                 // log buffer size
+
+#if (MATATALAB_FEATURE == 1)
+
+ir_universal_data_type ir_universal_data_buf[IRDATALEN] = {0}; 
+
+static bool ir_learn_enable = false;
+static bool ir_learn_finish = false;
+
+void set_ir_learn_state(bool enable)
+{
+    memset(ir_universal_data_buf,  0x00, sizeof(ir_universal_data_buf));
+    ir_learn_enable = enable;
+}
+
+bool is_ir_learn_enable(void)
+{
+    return ir_learn_enable;
+}
+
+void set_ir_learn_finish_state(bool enable)
+{
+    ir_learn_finish = enable;
+}
+
+bool is_ir_learn_finish(void)
+{
+    return ir_learn_finish;
+}
+
+#endif //MATATALAB_FEATURE
 
 static void
 irmp_log (uint_fast8_t val)
@@ -1139,7 +1177,9 @@ irmp_log (uint_fast8_t val)
     static uint_fast8_t     startcycles;                                    // current number of start-zeros
     static uint_fast16_t    cnt;                                            // counts sequenced highbits - to detect end
     static uint_fast8_t     last_val = 1;
-
+#if (MATATALAB_FEATURE == 1)
+    static uint16_t         ir_data_buf_idx;
+#endif //MATATALAB_FEATURE
     if (! val && (startcycles < STARTCYCLES) && !buf_idx)                   // prevent that single random zeros init logging
     {
         startcycles++;
@@ -1153,20 +1193,31 @@ irmp_log (uint_fast8_t val)
             if (last_val == val)
             {
                 cnt++;
-
-                if (val && cnt > ENDBITS)                                   // if high received then look at log-stop condition
+                if (val && (cnt > ENDBITS))                                 // if high received then look at log-stop condition
                 {                                                           // if stop condition is true, output on uart
                     uint_fast8_t     i8;
                     uint_fast16_t    i;
                     uint_fast16_t    j;
                     uint_fast8_t     v = '1';
                     uint_fast16_t    d;
-
+#if (MATATALAB_FEATURE == 1)
+                    (void)i8;
+                    if(is_ir_learn_enable())
+                    {
+                        ir_data_buf_idx = 0;
+                        ir_universal_data_buf[ir_data_buf_idx].ir_value = 0;
+                        ir_universal_data_buf[ir_data_buf_idx].ir_value_num = STARTCYCLES;
+                        irmp_uart_putc (ir_universal_data_buf[ir_data_buf_idx].ir_value);
+                        irmp_uart_putc (ir_universal_data_buf[ir_data_buf_idx].ir_value_num);
+                        ir_data_buf_idx++;
+                    }
+#else //MATATALAB_FEATURE
                     for (i8 = 0; i8 < STARTCYCLES; i8++)
                     {
                         irmp_uart_putc ('0');                               // the ignored starting zeros
                     }
 
+#endif //MATATALAB_FEATURE
                     for (i = 0; i < buf_idx; i++)
                     {
                         d = buf[i];
@@ -1179,24 +1230,71 @@ irmp_log (uint_fast8_t val)
                             d |= ((uint_fast16_t) buf[i] << 8);
                         }
 
+#if (MATATALAB_FEATURE)
+                        (void)j;
+                        if ((d != 0) && (is_ir_learn_enable() == true))
+                        {
+                            if(d > 0xff)
+                            {
+                                uint8_t multiple_8bit = d / 0xff;
+                                uint8_t remainder_8bit = d % 0xff;
+                                for(j = 0; j < multiple_8bit; j++)
+                                {
+                                    ir_universal_data_buf[ir_data_buf_idx].ir_value = v-'0';
+                                    ir_universal_data_buf[ir_data_buf_idx].ir_value_num = 0xff;
+                                    irmp_uart_putc (ir_universal_data_buf[ir_data_buf_idx].ir_value);
+                                    irmp_uart_putc (ir_universal_data_buf[ir_data_buf_idx].ir_value_num);
+                                    ir_data_buf_idx++;
+                                }
+                                if(remainder_8bit != 0)
+                                {
+                                    ir_universal_data_buf[ir_data_buf_idx].ir_value = v-'0';
+                                    ir_universal_data_buf[ir_data_buf_idx].ir_value_num = remainder_8bit;
+                                    irmp_uart_putc (ir_universal_data_buf[ir_data_buf_idx].ir_value);
+                                    irmp_uart_putc (ir_universal_data_buf[ir_data_buf_idx].ir_value_num);
+                                    ir_data_buf_idx++;
+                                }
+
+                            }
+                            else
+                            {
+                                ir_universal_data_buf[ir_data_buf_idx].ir_value = v-'0';
+                                ir_universal_data_buf[ir_data_buf_idx].ir_value_num = d;
+                                irmp_uart_putc (ir_universal_data_buf[ir_data_buf_idx].ir_value);
+                                irmp_uart_putc (ir_universal_data_buf[ir_data_buf_idx].ir_value_num);
+                                ir_data_buf_idx++;
+                            }
+                        }
+#else //MATATALAB_FEATURE
                         for (j = 0; j < d; j++)
                         {
                             irmp_uart_putc (v);
                         }
+#endif //MATATALAB_FEATURE
 
                         v = (v == '1') ? '0' : '1';
                     }
-
+#if (MATATALAB_FEATURE == 1)
+                    if(is_ir_learn_enable())
+                    {
+                        ir_universal_data_buf[ir_data_buf_idx].ir_value = 1;
+                        ir_universal_data_buf[ir_data_buf_idx].ir_value_num = 20;
+                        irmp_uart_putc (ir_universal_data_buf[ir_data_buf_idx].ir_value);
+                        irmp_uart_putc (ir_universal_data_buf[ir_data_buf_idx].ir_value_num);
+                        set_ir_learn_finish_state(true);
+                    }
+#else //MATATALAB_FEATURE
                     for (i8 = 0; i8 < 20; i8++)
                     {
                         irmp_uart_putc ('1');
                     }
 
                     irmp_uart_putc ('\n');
+#endif //MATATALAB_FEATURE
                     buf_idx = 0;
                     last_val = 1;
                     cnt = 0;
-                }
+                    }
             }
             else if (buf_idx < DATALEN - 3)
             {
@@ -3356,6 +3454,9 @@ irmp_ISR (void)
                         ANALYZE_PRINTF5 ("protocol = NEC or JVC (type 1) repeat frame, start bit timings: pulse: %3d - %3d, pause: %3d - %3d\n",
                                         JVC_START_BIT_PULSE_LEN_MIN, JVC_START_BIT_PULSE_LEN_MAX,
                                         JVC_REPEAT_START_BIT_PAUSE_LEN_MIN, JVC_REPEAT_START_BIT_PAUSE_LEN_MAX);
+                        // log_uart_printf(UART1, "protocol = NEC or JVC (type 1) repeat frame, start bit timings: pulse: %3d - %3d, pause: %3d - %3d\n",
+                        //                 JVC_START_BIT_PULSE_LEN_MIN, JVC_START_BIT_PULSE_LEN_MAX,
+                        //                 JVC_REPEAT_START_BIT_PAUSE_LEN_MIN, JVC_REPEAT_START_BIT_PAUSE_LEN_MAX);
                         irmp_param_p = (IRMP_PARAMETER *) &nec_param;
                     }
                     else
@@ -3369,6 +3470,9 @@ irmp_ISR (void)
                         ANALYZE_PRINTF5 ("protocol = NEC42, start bit timings: pulse: %3d - %3d, pause: %3d - %3d\n",
                                         NEC_START_BIT_PULSE_LEN_MIN, NEC_START_BIT_PULSE_LEN_MAX,
                                         NEC_START_BIT_PAUSE_LEN_MIN, NEC_START_BIT_PAUSE_LEN_MAX);
+                        // log_uart_printf(UART1, "protocol = NEC42, start bit timings: pulse: %3d - %3d, pause: %3d - %3d\n",
+                        //                 NEC_START_BIT_PULSE_LEN_MIN, NEC_START_BIT_PULSE_LEN_MAX,
+                        //                 NEC_START_BIT_PAUSE_LEN_MIN, NEC_START_BIT_PAUSE_LEN_MAX);
                         irmp_param_p = (IRMP_PARAMETER *) &nec42_param;
 #else
                         ANALYZE_PRINTF5 ("protocol = NEC, start bit timings: pulse: %3d - %3d, pause: %3d - %3d\n",
@@ -4438,6 +4542,7 @@ irmp_ISR (void)
                         else if (irmp_param.protocol == IRMP_NEC42_PROTOCOL && irmp_bit == 32)      // it was a NEC stop bit
                         {
                             ANALYZE_PRINTF1 ("Switching to NEC protocol\n");
+                            // log_uart_printf(UART1, "Switching to NEC protocol\n");
                             irmp_param.stop_bit     = TRUE;                                     // set flag
                             irmp_param.protocol     = IRMP_NEC_PROTOCOL;                        // switch protocol
                             irmp_param.complete_len = irmp_bit;                                 // patch length: 16 or 17
@@ -4548,6 +4653,7 @@ irmp_ISR (void)
                         else
                         {
                             ANALYZE_PRINTF3 ("error 2: pause %d after data bit %d too long\n", irmp_pause_time, irmp_bit);
+                            // log_uart_printf(UART1, "error 2: pause %d after data bit %d too long\n", irmp_pause_time, irmp_bit);
                             ANALYZE_ONLY_NORMAL_PUTCHAR ('\n');
                             irmp_start_bit_detected = 0;                    // wait for another start bit...
                             irmp_pulse_time         = 0;
@@ -4563,6 +4669,7 @@ irmp_ISR (void)
                 if (got_light)
                 {
                     ANALYZE_PRINTF5 ("%8.3fms [bit %2d: pulse = %3d, pause = %3d] ", (double) (time_counter * 1000) / F_INTERRUPTS, irmp_bit, irmp_pulse_time, irmp_pause_time);
+                    // log_uart_printf(UART1, "%8.3fms [bit %2d: pulse = %3d, pause = %3d] ", (double) (time_counter * 1000) / F_INTERRUPTS, irmp_bit, irmp_pulse_time, irmp_pause_time);
 
 #if IRMP_SUPPORT_MANCHESTER == 1
                     if ((irmp_param.flags & IRMP_PARAM_FLAG_IS_MANCHESTER))                                     // Manchester
@@ -5118,6 +5225,7 @@ irmp_ISR (void)
 #endif // IRMP_SUPPORT_MELINERA_PROTOCOL
                     {                                                               // timing incorrect!
                         ANALYZE_PRINTF4 ("error 3: timing not correct: data bit %d,  pulse: %d, pause: %d\n", irmp_bit, irmp_pulse_time, irmp_pause_time);
+                        log_uart_printf(UART1, "error 3: timing not correct: data bit %d,  pulse: %d, pause: %d\n", irmp_bit, irmp_pulse_time, irmp_pause_time);
                         ANALYZE_ONLY_NORMAL_PUTCHAR ('\n');
                         irmp_start_bit_detected = 0;                                // reset flags and wait for next start bit
                         irmp_pause_time         = 0;

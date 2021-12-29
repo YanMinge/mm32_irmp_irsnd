@@ -261,7 +261,7 @@ int drv_gpio_pwm_mode(gpio_pin_type pin, uint16_t frequency)
              RCC_APB1PeriphClockCmd(RCC_APB1Periph_TIM2, ENABLE);
 
              TIM_TimeBaseStructInit(&TIM_TimeBaseStructure);
-             TIM_TimeBaseStructure.TIM_Period = (9000000 / frequency) - 1;
+             TIM_TimeBaseStructure.TIM_Period = (F_CPU / 8 / frequency) - 1;
              pwm_divination = TIM_TimeBaseStructure.TIM_Period;
              TIM_TimeBaseStructure.TIM_Prescaler = 7;
              //Setting Clock Segmentation
@@ -301,7 +301,7 @@ int drv_gpio_pwm_mode(gpio_pin_type pin, uint16_t frequency)
              RCC_APB1PeriphClockCmd(RCC_APB1Periph_TIM3, ENABLE);
 
              TIM_TimeBaseStructInit(&TIM_TimeBaseStructure);
-             TIM_TimeBaseStructure.TIM_Period = (9000000 / frequency) - 1;
+             TIM_TimeBaseStructure.TIM_Period = (F_CPU / 8 /frequency) - 1;
              pwm_divination = TIM_TimeBaseStructure.TIM_Period;
              TIM_TimeBaseStructure.TIM_Prescaler = 7;
              //Setting Clock Segmentation
@@ -337,7 +337,7 @@ int drv_gpio_pwm_mode(gpio_pin_type pin, uint16_t frequency)
              RCC_APB1PeriphClockCmd(RCC_APB1Periph_TIM3, ENABLE);
 
              TIM_TimeBaseStructInit(&TIM_TimeBaseStructure);
-             TIM_TimeBaseStructure.TIM_Period = (9000000 / frequency / 9) - 1;
+             TIM_TimeBaseStructure.TIM_Period = (F_CPU / 8 /frequency) - 1;
              pwm_divination = TIM_TimeBaseStructure.TIM_Period;
              TIM_TimeBaseStructure.TIM_Prescaler = 7;
              //Setting Clock Segmentation
@@ -392,7 +392,7 @@ int drv_analog_write_freq(gpio_pin_type pin, uint32_t frequency)
     {
         case PA_0:       //TIM2_CH1         
               TIM_TimeBaseStructInit(&TIM_TimeBaseStructure);
-             TIM_TimeBaseStructure.TIM_Period = (9000000 / frequency) - 1;
+             TIM_TimeBaseStructure.TIM_Period = (F_CPU / 8 / frequency) - 1;
              pwm_divination = TIM_TimeBaseStructure.TIM_Period;
              TIM_TimeBaseStructure.TIM_Prescaler = 7;
              //Setting Clock Segmentation
@@ -408,7 +408,7 @@ int drv_analog_write_freq(gpio_pin_type pin, uint32_t frequency)
              break;
         case PA_6:       //TIM3_CH1
              TIM_TimeBaseStructInit(&TIM_TimeBaseStructure);
-             TIM_TimeBaseStructure.TIM_Period = (9000000 / frequency) - 1;
+             TIM_TimeBaseStructure.TIM_Period = (F_CPU / 8 / frequency) - 1;
              pwm_divination = TIM_TimeBaseStructure.TIM_Period;
              TIM_TimeBaseStructure.TIM_Prescaler = 7;
              //Setting Clock Segmentation
@@ -420,7 +420,7 @@ int drv_analog_write_freq(gpio_pin_type pin, uint32_t frequency)
              break;
         case PB_0:       //TIM3_CH3
              TIM_TimeBaseStructInit(&TIM_TimeBaseStructure);
-             TIM_TimeBaseStructure.TIM_Period = (9000000 / frequency / 9) - 1;
+             TIM_TimeBaseStructure.TIM_Period = (F_CPU / 8 /frequency) - 1;
              pwm_divination = TIM_TimeBaseStructure.TIM_Period;
              TIM_TimeBaseStructure.TIM_Prescaler = 7;
              //Setting Clock Segmentation

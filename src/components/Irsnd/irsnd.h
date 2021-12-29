@@ -140,10 +140,17 @@ extern void                                     irsnd_init (void);
 extern bool                                     irsnd_is_busy (void);
 extern bool                                     irsnd_send_data (IRMP_DATA *, uint8_t);
 extern bool                                     irsnd_ISR (void);
+#if (MATATALAB_FEATURE == 1)
+extern ir_universal_data_type irsnd_universal_data_buf[IRDATALEN]; 
+extern bool                                     irsnd_send_universal_data(ir_universal_data_type *, uint16_t, uint8_t);
+#endif
 #else
 extern uint8_t                                  irsnd_is_busy (void);
 extern uint8_t                                  irsnd_send_data (IRMP_DATA *, uint8_t);
 extern uint8_t                                  irsnd_ISR (void);
+#if (MATATALAB_FEATURE == 1)
+extern uint8_t                                  irsnd_send_universal_data(ir_universal_data_type *, uint16_t, uint8_t);
+#endif
 #endif
 extern void                                     irsnd_stop (void);
 

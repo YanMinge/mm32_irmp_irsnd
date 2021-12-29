@@ -6,6 +6,9 @@
 #include "mm32_device.h"
 #include "drv_common_def.h"
 
+extern u32 SystemCoreClock;
+#define F_CPU SystemCoreClock
+
 #define HIGH        1
 #define LOW         0
 

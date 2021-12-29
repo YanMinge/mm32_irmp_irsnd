@@ -62,8 +62,6 @@
 #  include "drv_gpio.h"
 #  define ARM_MM32
 #  define ARM_MM32F013X
-   extern u32 SystemCoreClock;
-#  define F_CPU SystemCoreClock
 #elif defined(TARGET_IS_BLIZZARD_RA2)                                               // TI Stellaris (tested on Stellaris Launchpad with Code Composer Studio)
 #  define STELLARIS_ARM_CORTEX_M4
 #  define F_CPU (SysCtlClockGet())
@@ -163,12 +161,22 @@
 #elif defined(ARM_MM32F013X)
 #  include <stdint.h>
 #  include <stdio.h>
-#  include "drv_uart.h"
+#  include "drv_gpio.h"
 #  define PROGMEM
 #  define memcpy_P                      memcpy
 #  define __attribute__(x)
 #  define uint_fast8_t                  uint8_t
 #  define uint_fast16_t                 uint16_t
+#  define MATATALAB_FEATURE             1
+   #if (MATATALAB_FEATURE == 1)
+      #define IRDATALEN                 800
+      typedef struct
+      {
+         uint8_t ir_value;
+         uint8_t ir_value_num;  
+      }ir_universal_data_type;
+      extern ir_universal_data_type ir_universal_data_buf[IRDATALEN];
+   #endif //(MATATALAB_FEATURE == 1)
 
 #elif defined(TEENSY_ARM_CORTEX_M4)
 #  define PROGMEM

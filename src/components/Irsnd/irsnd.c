@@ -1075,6 +1075,42 @@ bitsrevervse (uint16_t x, uint8_t len)
 static uint8_t  sircs_additional_bitlen;
 #endif // IRSND_SUPPORT_SIRCS_PROTOCOL == 1
 
+#if (MATATALAB_FEATURE == 1)
+ir_universal_data_type irsnd_universal_data_buf[IRDATALEN] = {0};
+uint16_t irsnd_universal_data_length = 0;
+#  ifdef __cplusplus
+bool
+#else
+uint8_t
+#endif
+irsnd_send_universal_data(ir_universal_data_type *irmp_data_buffer, uint16_t length, uint8_t do_wait)
+{
+    if (do_wait)
+    {
+        while (irsnd_busy)
+        {
+            // wait for last command to have ended
+        }
+    }
+    else if (irsnd_busy)
+    {
+        return (FALSE);
+    }
+    irsnd_protocol = IRMP_UNIVERSAL_PROTOCOL;
+    memcpy(irsnd_universal_data_buf, irmp_data_buffer, length * sizeof(ir_universal_data_type));
+    irsnd_universal_data_length = length;
+    // uint16_t i;
+    // log_uart_printf(UART1, "irsnd_send_universal_data:\r\n");
+    // for(i = 0; i <length; i++)
+    // {
+    //     log_uart_printf(UART1, "0x%02x[0x%02x] ", irsnd_universal_data_buf[i].ir_value, irsnd_universal_data_buf[i].ir_value_num);
+    // }
+    // log_uart_printf(UART1, "\r\n");
+    irsnd_busy = true;
+    return irsnd_busy;
+}
+#endif //(MATATALAB_FEATURE == 1)
+
 /*
  * @param  do_wait - wait for last command to have ended before sending. For Arduino: Additionally wait for sent command to have ended.
  */
@@ -1818,7 +1854,10 @@ irsnd_ISR (void)
 #endif
     static uint8_t              pulse_len = 0xFF;
     static IRSND_PAUSE_LEN      pause_len = 0xFF;
-
+#if (MATATALAB_FEATURE == 1)
+    static uint16_t             current_transmission_bits       = 0;
+    static uint8_t              current_pulse_counter           = 0;
+#endif
     if (irsnd_busy)
     {
         if (current_bit == 0xFF && new_frame)                                       // start of transmission...
@@ -2682,6 +2721,17 @@ irsnd_ISR (void)
                         break;
                     }
 #endif
+#if (IRSND_SUPPORT_UNIVERSAL_PROTOCOL == 1) && (MATATALAB_FEATURE == 1)
+                    case IRMP_UNIVERSAL_PROTOCOL:
+                    {
+                        n_auto_repetitions          = 0;                                                    // 1 frame
+                        auto_repetition_pause_len   = 0;
+                        irsnd_set_freq (IRSND_FREQ_38_KHZ);
+                        current_transmission_bits   = 0;
+                        current_pulse_counter       = 0;
+                        break;
+                    }
+#endif
                     default:
                     {
                         irsnd_busy = FALSE;
@@ -3191,7 +3241,60 @@ irsnd_ISR (void)
                 }
 #endif // IRSND_SUPPORT_RC5_PROTOCOL == 1 || IRSND_SUPPORT_RC6_PROTOCOL == 1 || || IRSND_SUPPORT_RC6A_PROTOCOL == 1 || IRSND_SUPPORT_SIEMENS_PROTOCOL == 1 ||
        // IRSND_SUPPORT_RUWIDO_PROTOCOL == 1 || IRSND_SUPPORT_GRUNDIG_PROTOCOL == 1 || IRSND_SUPPORT_IR60_PROTOCOL == 1 || IRSND_SUPPORT_NOKIA_PROTOCOL == 1
-
+#if (IRSND_SUPPORT_UNIVERSAL_PROTOCOL == 1) && (MATATALAB_FEATURE == 1)
+                case IRMP_UNIVERSAL_PROTOCOL:
+                {
+                    if(current_transmission_bits < irsnd_universal_data_length)
+                    {
+                        if(current_pulse_counter > 0)
+                        {
+                            current_pulse_counter = current_pulse_counter - 1;
+                        }
+                        else
+                        {
+                            current_pulse_counter = irsnd_universal_data_buf[current_transmission_bits].ir_value_num;
+                            // log_uart_printf(UART1, "ir_value:%d, ir_value_num:%d, %d\r\n", irsnd_universal_data_buf[current_transmission_bits].ir_value, irsnd_universal_data_buf[current_transmission_bits].ir_value_num, irsnd_universal_data_length);
+                            if(irsnd_universal_data_buf[current_transmission_bits].ir_value == 0)
+                            {   
+                                if(irsnd_universal_data_buf[current_transmission_bits].ir_value_num > 2)
+                                {
+                                    current_pulse_counter = irsnd_universal_data_buf[current_transmission_bits].ir_value_num - 1; 
+                                }
+                                else
+                                {
+                                    current_pulse_counter = irsnd_universal_data_buf[current_transmission_bits].ir_value_num;
+                                }
+                                irsnd_on();
+                            }
+                            else
+                            {   
+                                // if(irsnd_universal_data_buf[current_transmission_bits].ir_value_num < 254)
+                                // {
+                                //     current_pulse_counter = irsnd_universal_data_buf[current_transmission_bits].ir_value_num + 1; 
+                                // }
+                                // else
+                                // {
+                                //     current_pulse_counter = irsnd_universal_data_buf[current_transmission_bits].ir_value_num;
+                                // }
+                                irsnd_off();
+                            }
+                            current_transmission_bits = current_transmission_bits + 1;
+                        }
+                    }
+                    else
+                    {
+                        current_pulse_counter = 0;
+                        current_transmission_bits = 0;
+                        irsnd_busy = FALSE;
+                        new_frame = TRUE;
+                        // irsnd_off();
+                        // pulse_counter = 0;
+                        // pause_counter = 0;
+                    }
+                    break;
+                    //Yanminge
+                }
+#endif //IRSND_SUPPORT_UNIVERSAL_PROTOCOL == 1
                 default:
                 {
                     irsnd_busy = FALSE;

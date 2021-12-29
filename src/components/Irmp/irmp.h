@@ -311,6 +311,13 @@ extern void                             irmp_init (void);
 extern uint_fast8_t                     irmp_get_data (IRMP_DATA *);
 extern uint_fast8_t                     irmp_ISR (void);
 
+#if (MATATALAB_FEATURE == 1)
+extern void set_ir_learn_state(bool enable);
+extern bool is_ir_learn_enable(void);
+extern void set_ir_learn_finish_state(bool enable);
+extern bool is_ir_learn_finish(void);
+#endif
+
 #if IRMP_PROTOCOL_NAMES == 1
 extern const char * const               irmp_protocol_names[IRMP_N_PROTOCOLS + 1] PROGMEM;
 #endif

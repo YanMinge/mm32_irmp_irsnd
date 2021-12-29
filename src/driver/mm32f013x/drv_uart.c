@@ -6,7 +6,7 @@
 #include "drv_uart.h"
 #include "hal_conf.h"
 
-#define DATA_TX_BUFSIZE      64
+#define DATA_TX_BUFSIZE      2048
 #define DATA_RX_BUFSIZE      64
 
 static RING_BUF_DEF_STRUCT s_tx_ring_buf;
@@ -127,7 +127,7 @@ void drv_uart_write_byte(UART_TypeDef* uart, uint8_t inputData)
 void uart_send_bytes(UART_TypeDef* uart, uint8_t *bytes, uint8_t len)
 {
     drv_ringbuf_write(&s_tx_ring_buf, bytes, len);
-    UART_ITConfig(uart, UART_IT_TXIEN, ENABLE);
+    // UART_ITConfig(uart, UART_IT_TXIEN, ENABLE);
 }
 
 void drv_uart_printf(UART_TypeDef* uart, char *fmt,...)
